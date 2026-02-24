@@ -3,7 +3,7 @@ import { Container } from "@cloudflare/containers";
 export class AssppContainer extends Container {
   defaultPort = 8080;
   requiredPorts = [8080];
-  sleepAfter = "2h";
+  sleepAfter = "10m";
   enableInternet = true;
   pingEndpoint = "/api/settings";
   envVars = {
