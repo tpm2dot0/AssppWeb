@@ -1,14 +1,14 @@
 import fs from "fs";
 import path from "path";
-import { Readable } from "stream";
-import { pipeline } from "stream/promises";
 import { v4 as uuidv4 } from "uuid";
-import { config, MAX_DOWNLOAD_SIZE, DOWNLOAD_TIMEOUT_MS } from "../config.js";
+import { config, DOWNLOAD_TIMEOUT_MS } from "../config.js";
 import { inject } from "./sinfInjector.js";
+import { ChunkedDownloader } from "./chunkedDownloader.js";
 import type { DownloadTask, Software, Sinf } from "../types/index.js";
 
 const tasks = new Map<string, DownloadTask>();
 const abortControllers = new Map<string, AbortController>();
+const chunkDownloaders = new Map<string, ChunkedDownloader>();
 const progressListeners = new Map<string, Set<(task: DownloadTask) => void>>();
 
 const PACKAGES_DIR = path.join(config.dataDir, "packages");
@@ -92,6 +92,96 @@ function persistTasks() {
   fs.writeFileSync(TASKS_FILE, JSON.stringify(completed, null, 2));
 }
 
+// Auto-cleanup: delete completed files older than configured days
+export function runTimeCleanup() {
+  const { autoCleanupDays } = config;
+  if (autoCleanupDays <= 0) return;
+  const cutoff = Date.now() - autoCleanupDays * 24 * 60 * 60 * 1000;
+
+  // Collect IDs first to avoid mutating the map during iteration
+  const expiredIds: string[] = [];
+  for (const task of tasks.values()) {
+    if (
+      task.status === "completed" &&
+      task.filePath &&
+      fs.existsSync(task.filePath)
+    ) {
+      try {
+        const stat = fs.statSync(task.filePath);
+        if (stat.mtimeMs < cutoff) {
+          expiredIds.push(task.id);
+        }
+      } catch {
+        // File inaccessible — skip
+      }
+    }
+  }
+
+  for (const id of expiredIds) {
+    console.log(`[Cleanup] Deleting expired task: ${id}`);
+    deleteTask(id);
+  }
+}
+
+// Auto-cleanup: evict oldest completed files when total size exceeds limit
+export function runSpaceCleanup() {
+  const { autoCleanupMaxMB } = config;
+  if (autoCleanupMaxMB <= 0) return;
+  const maxBytes = autoCleanupMaxMB * 1024 * 1024;
+
+  let totalBytes = 0;
+  const fileTasks: { id: string; size: number; mtimeMs: number }[] = [];
+
+  for (const task of tasks.values()) {
+    if (
+      task.status === "completed" &&
+      task.filePath &&
+      fs.existsSync(task.filePath)
+    ) {
+      try {
+        const stat = fs.statSync(task.filePath);
+        totalBytes += stat.size;
+        fileTasks.push({ id: task.id, size: stat.size, mtimeMs: stat.mtimeMs });
+      } catch {
+        // File inaccessible — skip
+      }
+    }
+  }
+
+  if (totalBytes <= maxBytes) return;
+
+  fileTasks.sort((a, b) => a.mtimeMs - b.mtimeMs);
+  for (const ft of fileTasks) {
+    console.log(`[Cleanup] Space limit exceeded, deleting task: ${ft.id}`);
+    deleteTask(ft.id);
+    totalBytes -= ft.size;
+    if (totalBytes <= maxBytes) break;
+  }
+}
+
+// Schedule daily time-based cleanup at midnight (self-correcting to avoid drift)
+function scheduleDailyCleanup() {
+  function msUntilMidnight(): number {
+    const now = new Date();
+    const next = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1,
+      0,
+      0,
+      0,
+    );
+    return next.getTime() - now.getTime();
+  }
+
+  function tick() {
+    runTimeCleanup();
+    setTimeout(tick, msUntilMidnight());
+  }
+
+  setTimeout(tick, msUntilMidnight());
+}
+
 function initOnStartup() {
   // Remove legacy downloads.json from old code
   if (fs.existsSync(LEGACY_DOWNLOADS_FILE)) {
@@ -137,6 +227,10 @@ function initOnStartup() {
 
   // Clean up orphaned IPA files (files without a task)
   cleanOrphanedPackages();
+
+  // Run time-based cleanup once on startup, then schedule daily
+  runTimeCleanup();
+  scheduleDailyCleanup();
 }
 
 function cleanOrphanedPackages() {
@@ -161,7 +255,7 @@ function cleanOrphanedPackages() {
           fs.rmdirSync(fullPath);
         }
       } else if (entry.isFile() && !knownPaths.has(path.resolve(fullPath))) {
-        // Orphaned file — remove
+        // Orphaned file or leftover .part temp file — remove
         fs.unlinkSync(fullPath);
       }
     }
@@ -225,6 +319,11 @@ export function deleteTask(id: string): boolean {
     controller.abort();
     abortControllers.delete(id);
   }
+  const downloader = chunkDownloaders.get(id);
+  if (downloader) {
+    downloader.abort();
+    chunkDownloaders.delete(id);
+  }
 
   // Remove file if exists, with path safety check
   if (task.filePath) {
@@ -264,6 +363,11 @@ export function pauseTask(id: string): boolean {
   if (controller) {
     controller.abort();
     abortControllers.delete(id);
+  }
+  const downloader = chunkDownloaders.get(id);
+  if (downloader) {
+    downloader.abort();
+    chunkDownloaders.delete(id);
   }
 
   task.status = "paused";
@@ -313,6 +417,10 @@ export function createTask(
 }
 
 async function startDownload(task: DownloadTask) {
+  // Pre-download cleanup: expire old files + enforce space limit
+  runTimeCleanup();
+  runSpaceCleanup();
+
   const controller = new AbortController();
   abortControllers.set(task.id, controller);
 
@@ -357,74 +465,20 @@ async function startDownload(task: DownloadTask) {
     // Re-validate download URL before fetching
     validateDownloadURL(task.downloadURL);
 
-    const response = await fetch(task.downloadURL, {
-      signal: controller.signal,
-      redirect: "follow",
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    if (!response.body) {
-      throw new Error("No response body");
-    }
-
-    // Check content length against max
-    const contentLength = parseInt(
-      response.headers.get("content-length") || "0",
-    );
-    if (contentLength > MAX_DOWNLOAD_SIZE) {
-      throw new Error(
-        `File too large: ${contentLength} bytes exceeds ${MAX_DOWNLOAD_SIZE} byte limit`,
-      );
-    }
-
-    let downloaded = 0;
-    let lastTime = Date.now();
-    let lastBytes = 0;
-
-    const writeStream = fs.createWriteStream(filePath);
-    const reader = response.body.getReader();
-
-    const readable = new Readable({
-      async read() {
-        try {
-          const { done, value } = await reader.read();
-          if (done) {
-            this.push(null);
-            return;
-          }
-          downloaded += value.byteLength;
-
-          // Enforce max download size even without Content-Length
-          if (downloaded > MAX_DOWNLOAD_SIZE) {
-            this.destroy(new Error("Download exceeded maximum size"));
-            return;
-          }
-
-          // Calculate speed every 500ms
-          const now = Date.now();
-          const elapsed = now - lastTime;
-          if (elapsed >= 500) {
-            const bytesPerSec = ((downloaded - lastBytes) / elapsed) * 1000;
-            task.speed = formatSpeed(bytesPerSec);
-            lastTime = now;
-            lastBytes = downloaded;
-          }
-
-          if (contentLength > 0) {
-            task.progress = Math.round((downloaded / contentLength) * 100);
-          }
-
-          notifyProgress(task);
-          this.push(Buffer.from(value));
-        } catch (err) {
-          this.destroy(err instanceof Error ? err : new Error(String(err)));
+    const downloader = new ChunkedDownloader(task.downloadURL, filePath, {
+      onProgress: (info) => {
+        task.speed = info.speed;
+        if (info.total > 0) {
+          task.progress = Math.round((info.downloaded / info.total) * 100);
         }
+        notifyProgress(task);
       },
     });
+    chunkDownloaders.set(task.id, downloader);
 
-    await pipeline(readable, writeStream);
+    await downloader.download(controller.signal);
 
+    chunkDownloaders.delete(task.id);
     abortControllers.delete(task.id);
     clearTimeout(timeout);
 
@@ -449,6 +503,7 @@ async function startDownload(task: DownloadTask) {
     persistTasks();
     notifyProgress(task);
   } catch (err) {
+    chunkDownloaders.delete(task.id);
     abortControllers.delete(task.id);
     clearTimeout(timeout);
 
@@ -469,11 +524,4 @@ async function startDownload(task: DownloadTask) {
     task.error = "Download failed";
     notifyProgress(task);
   }
-}
-
-function formatSpeed(bytesPerSec: number): string {
-  if (bytesPerSec < 1024) return `${Math.round(bytesPerSec)} B/s`;
-  if (bytesPerSec < 1024 * 1024)
-    return `${(bytesPerSec / 1024).toFixed(1)} KB/s`;
-  return `${(bytesPerSec / (1024 * 1024)).toFixed(1)} MB/s`;
 }

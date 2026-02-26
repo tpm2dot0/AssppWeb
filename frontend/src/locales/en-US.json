@@ -1,5 +1,12 @@
 {
   "loading": "Loading...",
+  "auth": {
+    "title": "Access Password",
+    "placeholder": "Enter access password",
+    "submit": "Unlock",
+    "error": "Incorrect password",
+    "verifying": "Verifying..."
+  },
   "theme": {
     "light": "Light Mode",
     "dark": "Dark Mode",
@@ -65,7 +72,8 @@
       "releaseNotes": "Release Notes",
       "screenshots": "Screenshots",
       "ratings": "ratings",
-      "free": "Free"
+      "free": "Free",
+      "noAccountsForRegion": "No accounts found for this region"
     },
     "versions": {
       "title": "Version History",
@@ -205,10 +213,12 @@
     },
     "server": {
       "title": "Server",
-      "version": "Version",
-      "dataDir": "Data Directory",
       "uptime": "Uptime",
-      "offline": "Unable to connect to server."
+      "offline": "Unable to connect to server.",
+      "configuration": "Configuration",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "notSet": "Not set (auto-detect)"
     },
     "data": {
       "title": "Data",
@@ -233,7 +243,9 @@
     },
     "about": {
       "title": "About",
-      "description": "Asspp Web -- a web-based interface for managing Apple app downloads and licenses."
+      "description": "Asspp Web -- a web-based interface for managing Apple app downloads and licenses.",
+      "buildCommit": "Build Commit",
+      "buildDate": "Build Date"
     }
   },
   "countries": {
@@ -415,10 +427,14 @@
       "installStarted": "Installation Started",
       "shareAcquired": "Link Acquired",
       "downloadIpaStarted": "Downloading IPA",
-      "deleteSuccess": "Delete Success"
+      "deleteSuccess": "Delete Success",
+      "downloadLimit": "Size Limit Exceeded"
     },
     "msg": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}",
     "msgShare": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\nYou can use AirDrop to share it with your friends.",
-    "msgFailed": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\nError: {{error}}"
+    "msgFailed": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\nError: {{error}}",
+    "downloadLimit": {
+      "message": "{{appName}}\nApp size {{size}} MB exceeds the server limit of {{limit}} MB.\nPlease contact the administrator or deploy your own instance."
+    }
   }
 }

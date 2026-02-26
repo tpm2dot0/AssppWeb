@@ -1,5 +1,12 @@
 {
   "loading": "Загрузка...",
+  "auth": {
+    "title": "Пароль доступа",
+    "placeholder": "Введите пароль доступа",
+    "submit": "Разблокировать",
+    "error": "Неверный пароль",
+    "verifying": "Проверка..."
+  },
   "theme": {
     "light": "Светлая тема",
     "dark": "Темная тема",
@@ -65,7 +72,8 @@
       "releaseNotes": "Что нового",
       "screenshots": "Скриншоты",
       "ratings": "оценок",
-      "free": "Бесплатно"
+      "free": "Бесплатно",
+      "noAccountsForRegion": "Аккаунты для этого региона не найдены"
     },
     "versions": {
       "title": "История версий",
@@ -205,10 +213,12 @@
     },
     "server": {
       "title": "Сервер",
-      "version": "Версия",
-      "dataDir": "Директория данных",
       "uptime": "Время работы",
-      "offline": "Не удалось подключиться к серверу."
+      "offline": "Не удалось подключиться к серверу.",
+      "configuration": "Конфигурация сервера",
+      "enabled": "Включено",
+      "disabled": "Отключено",
+      "notSet": "Не задано (автоопределение)"
     },
     "data": {
       "title": "Данные",
@@ -233,7 +243,9 @@
     },
     "about": {
       "title": "О программе",
-      "description": "Asspp Web —— веб-интерфейс для загрузки приложений Apple и управления лицензиями."
+      "description": "Asspp Web —— веб-интерфейс для загрузки приложений Apple и управления лицензиями.",
+      "buildCommit": "Коммит сборки",
+      "buildDate": "Дата сборки"
     }
   },
   "countries": {
@@ -415,10 +427,14 @@
       "installStarted": "Начало установки",
       "shareAcquired": "Ссылка получена",
       "downloadIpaStarted": "Начало загрузки IPA",
-      "deleteSuccess": "Успешное удаление"
+      "deleteSuccess": "Успешное удаление",
+      "downloadLimit": "Превышен лимит размера"
     },
     "msg": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}",
     "msgShare": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\nВы можете использовать AirDrop, чтобы поделиться ею с друзьями.",
-    "msgFailed": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\nОшибка: {{error}}"
+    "msgFailed": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\nОшибка: {{error}}",
+    "downloadLimit": {
+      "message": "{{appName}}\nРазмер приложения {{size}} МБ превышает лимит сервера {{limit}} МБ.\nПожалуйста, свяжитесь с администратором или разверните свой собственный сервер."
+    }
   }
 }

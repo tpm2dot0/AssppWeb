@@ -1,5 +1,12 @@
 {
   "loading": "読み込み中...",
+  "auth": {
+    "title": "アクセスパスワード",
+    "placeholder": "アクセスパスワードを入力",
+    "submit": "ロック解除",
+    "error": "パスワードが正しくありません",
+    "verifying": "確認中..."
+  },
   "theme": {
     "light": "ライトモード",
     "dark": "ダークモード",
@@ -65,7 +72,8 @@
       "releaseNotes": "リリースノート",
       "screenshots": "スクリーンショット",
       "ratings": "件の評価",
-      "free": "無料"
+      "free": "無料",
+      "noAccountsForRegion": "この地域のアカウントがありません"
     },
     "versions": {
       "title": "バージョン履歴",
@@ -205,10 +213,12 @@
     },
     "server": {
       "title": "サーバー",
-      "version": "バージョン",
-      "dataDir": "データディレクトリ",
       "uptime": "稼働時間",
-      "offline": "サーバーに接続できません。"
+      "offline": "サーバーに接続できません。",
+      "configuration": "サーバー設定",
+      "enabled": "有効",
+      "disabled": "無効",
+      "notSet": "未設定（自動検出）"
     },
     "data": {
       "title": "データ",
@@ -233,7 +243,9 @@
     },
     "about": {
       "title": "概要",
-      "description": "Asspp Web —— Apple アプリのダウンロードとライセンス管理のためのウェブベースインターフェース。"
+      "description": "Asspp Web —— Apple アプリのダウンロードとライセンス管理のためのウェブベースインターフェース。",
+      "buildCommit": "ビルドコミット",
+      "buildDate": "ビルド日時"
     }
   },
   "countries": {
@@ -415,10 +427,14 @@
       "installStarted": "インストール開始",
       "shareAcquired": "リンク取得成功",
       "downloadIpaStarted": "IPA ダウンロード開始",
-      "deleteSuccess": "削除成功"
+      "deleteSuccess": "削除成功",
+      "downloadLimit": "サイズ制限超過"
     },
     "msg": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}",
     "msgShare": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\nAirDropを使用して友達と共有できます。",
-    "msgFailed": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\nエラー: {{error}}"
+    "msgFailed": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\nエラー: {{error}}",
+    "downloadLimit": {
+      "message": "{{appName}}\nアプリのサイズ {{size}} MB がサーバーの制限 {{limit}} MB を超えています。\n管理者に連絡するか、ご自身でサーバーを展開して再試行してください。"
+    }
   }
 }

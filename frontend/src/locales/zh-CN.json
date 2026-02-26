@@ -1,5 +1,12 @@
 {
   "loading": "加载中...",
+  "auth": {
+    "title": "访问密码",
+    "placeholder": "请输入访问密码",
+    "submit": "解锁",
+    "error": "密码错误",
+    "verifying": "验证中..."
+  },
   "theme": {
     "light": "日间模式",
     "dark": "夜间模式",
@@ -65,7 +72,8 @@
       "releaseNotes": "更新日志",
       "screenshots": "屏幕截图",
       "ratings": "个评分",
-      "free": "免费"
+      "free": "免费",
+      "noAccountsForRegion": "未找到该地区的账号"
     },
     "versions": {
       "title": "历史版本",
@@ -205,10 +213,12 @@
     },
     "server": {
       "title": "服务器",
-      "version": "版本",
-      "dataDir": "数据目录",
       "uptime": "运行时间",
-      "offline": "无法连接到服务器。"
+      "offline": "无法连接到服务器。",
+      "configuration": "服务器配置",
+      "enabled": "已启用",
+      "disabled": "已禁用",
+      "notSet": "未设置（自动检测）"
     },
     "data": {
       "title": "数据",
@@ -233,7 +243,9 @@
     },
     "about": {
       "title": "关于",
-      "description": "Asspp Web —— 基于 Web 的 Apple 应用下载和许可证管理界面。"
+      "description": "Asspp Web —— 基于 Web 的 Apple 应用下载和许可证管理界面。",
+      "buildCommit": "构建提交",
+      "buildDate": "构建日期"
     }
   },
   "countries": {
@@ -415,10 +427,14 @@
       "installStarted": "开始安装",
       "shareAcquired": "链接已获取",
       "downloadIpaStarted": "开始下载 IPA",
-      "deleteSuccess": "删除成功"
+      "deleteSuccess": "删除成功",
+      "downloadLimit": "文件大小超限"
     },
     "msg": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}",
     "msgShare": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\n您可以使用 Airdrop 分享给您的朋友。",
-    "msgFailed": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\n错误: {{error}}"
+    "msgFailed": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\n错误: {{error}}",
+    "downloadLimit": {
+      "message": "{{appName}}\n应用大小 {{size}} MB 超过服务器限制 {{limit}} MB。\n请联系管理员或自行部署后再尝试。"
+    }
   }
 }
